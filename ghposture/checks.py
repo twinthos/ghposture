@@ -124,9 +124,17 @@ def push_protection(ctx: RepoContext) -> Findings:
                      "Enable push protection so a token is blocked before it lands.")]
 
 
+MANIFESTS = ("package.json", "requirements.txt", "pyproject.toml", "Pipfile",
+             "go.mod", "Cargo.toml", "Gemfile", "pom.xml", "build.gradle",
+             "composer.json", "pubspec.yaml", "Package.swift")
+
+
 def dependabot_alerts(ctx: RepoContext) -> Findings:
     """204 means enabled, 404 means disabled. Requires admin to read."""
     full = ctx.full_name
+    if ctx.tree and not any(f.rsplit("/", 1)[-1] in MANIFESTS for f in ctx.tree):
+        ctx.skip("no dependency manifests: nothing to alert on")
+        return []
     try:
         code = ctx.gh.status(f"/repos/{full}/vulnerability-alerts")
     except Forbidden:

@@ -47,13 +47,16 @@ def scan(gh: GitHub, org: str | None = None, repos: Iterable[str] | None = None,
                     tool_version=__version__)
     for listed in list_repos(gh, org, repos, include_private):
         full_name = listed.get("full_name", "?")
-        report.repos_scanned += 1
         # The org listing omits security_and_analysis; fetch the repository
         # itself so the settings checks can actually run.
         try:
             meta = gh.get(f"/repos/{full_name}")
         except (ApiError, Forbidden, NotFound):
             meta = listed
+        if meta.get("archived"):
+            report.repos_inaccessible.append((full_name, "archived, read-only"))
+            continue
+        report.repos_scanned += 1
         try:
             ctx = build_context(gh, meta)
         except (ApiError, Forbidden, NotFound) as exc:
