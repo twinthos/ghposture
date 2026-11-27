@@ -1,0 +1,11 @@
+name: ci
+on: [push]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./local-action
+      - uses: docker://alpine:3.20

@@ -1,0 +1,10 @@
+{
+  "accepted": [
+    {
+      "repo": "twinthos/twinthos-public-site",
+      "check": "R005",
+      "reason": "Deploy branch: force-push blocking applied, but a required PR would break the publish workflow. Revisit when publishing moves to Actions.",
+      "expires": "2027-02-28"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+name: build
+on: [issue_comment]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: [self-hosted, linux]
+    steps:
+      - run: echo "${{ github.event.comment.body }}"
+      - run: curl -fsSL https://example.com/install.sh | bash
