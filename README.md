@@ -57,6 +57,20 @@ Exit codes: `0` clean at the chosen threshold, `1` findings at or above it, `2` 
 
 Read the checks you can. Without admin on a repository, `security_and_analysis`, dependency alerts, Actions permissions and branch protection return 403 and are recorded as **skipped**, never as passed. A fine-grained token with `Administration: read`, `Contents: read` and `Actions: read` gives full coverage on repositories you own.
 
+### As a GitHub Action
+
+```yaml
+- uses: twinthos/ghposture@main
+  with:
+    repo: ${{ github.repository }}
+    token: ${{ secrets.GITHUB_TOKEN }}
+    fail-on: high
+```
+
+The action exits with the scan's code, so it gates a job without extra scripting.
+Settings checks need an admin token; without one they are reported as skipped,
+and the job still evaluates every workflow check.
+
 ## The 19 checks
 
 | id | check | severity | what a failure means |

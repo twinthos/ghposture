@@ -1,0 +1,70 @@
+name: ghposture
+description: Read-only GitHub estate posture scan. Fails the job when findings meet the threshold.
+author: Twinthos
+
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  org:
+    description: Organisation or user login to scan.
+    required: false
+  repo:
+    description: "Single repository as owner/name. Overrides org."
+    required: false
+  format:
+    description: text, md or json.
+    required: false
+    default: text
+  fail-on:
+    description: critical, high, medium, low or none.
+    required: false
+    default: high
+  baseline:
+    description: Path to a baseline file of accepted risks.
+    required: false
+  token:
+    description: Token used for the API. Needs read access; admin for settings checks.
+    required: true
+
+outputs:
+  risk-points:
+    description: Summed severity weight of unaccepted findings.
+    value: ${{ steps.scan.outputs.risk-points }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+      with:
+        python-version: "3.12"
+    - name: Install ghposture
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: pip install --quiet "$ACTION_PATH"
+    - name: Scan
+      id: scan
+      shell: bash
+      env:
+        GHPOSTURE_TOKEN: ${{ inputs.token }}
+        GHPOSTURE_ORG: ${{ inputs.org }}
+        GHPOSTURE_REPO: ${{ inputs.repo }}
+        GHPOSTURE_FORMAT: ${{ inputs.format }}
+        GHPOSTURE_FAIL_ON: ${{ inputs.fail-on }}
+        GHPOSTURE_BASELINE: ${{ inputs.baseline }}
+      run: |
+        set -euo pipefail
+        args=(--format "$GHPOSTURE_FORMAT" --fail-on "$GHPOSTURE_FAIL_ON")
+        if [ -n "$GHPOSTURE_ORG" ]; then args+=(--org "$GHPOSTURE_ORG"); fi
+        if [ -n "$GHPOSTURE_REPO" ]; then args+=(--repo "$GHPOSTURE_REPO"); fi
+        if [ -n "$GHPOSTURE_BASELINE" ]; then args+=(--baseline "$GHPOSTURE_BASELINE"); fi
+        set +e
+        GITHUB_TOKEN="$GHPOSTURE_TOKEN" ghposture scan "${args[@]}" | tee scan.txt
+        status=${PIPESTATUS[0]}
+        set -e
+        points=$(grep -E '^risk points' scan.txt | awk '{print $3}' || true)
+        echo "risk-points=${points:-0}" >> "$GITHUB_OUTPUT"
+        exit "$status"
