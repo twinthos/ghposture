@@ -38,3 +38,9 @@ jobs:
         run: pytest -q
       - name: CLI smoke test
         run: python -m ghposture checks
+      - name: Self scan
+        if: matrix.python == '3.12'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET: ${{ github.repository }}
+        run: python -m ghposture scan --repo "$TARGET" --format text --fail-on critical
