@@ -36,9 +36,15 @@ def scan(gh: GitHub, org: str | None = None, repos: Iterable[str] | None = None,
     report = Report(target=org or ", ".join(sorted(repos or [])),
                     generated_at=now.replace(microsecond=0).isoformat(),
                     tool_version=__version__)
-    for meta in list_repos(gh, org, repos, include_private):
-        full_name = meta.get("full_name", "?")
+    for listed in list_repos(gh, org, repos, include_private):
+        full_name = listed.get("full_name", "?")
         report.repos_scanned += 1
+        # The org listing omits security_and_analysis; fetch the repository
+        # itself so the settings checks can actually run.
+        try:
+            meta = gh.get(f"/repos/{full_name}")
+        except (ApiError, Forbidden, NotFound):
+            meta = listed
         try:
             ctx = build_context(gh, meta)
         except (ApiError, Forbidden, NotFound) as exc:
