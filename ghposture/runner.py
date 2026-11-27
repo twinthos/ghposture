@@ -24,6 +24,15 @@ def list_repos(gh: GitHub, org: str | None, repos: Iterable[str] | None,
     except NotFound:
         discovered = []
     if not discovered:
+        # Personal account: the public listing hides private repositories even
+        # when the token can read them, so ask for the owner's own set first.
+        try:
+            owned = gh.paginate("/user/repos", {"affiliation": "owner", "sort": "full_name"})
+            discovered = [r for r in owned
+                          if (r.get("owner") or {}).get("login", "").lower() == org.lower()]
+        except (Forbidden, NotFound, ApiError):
+            discovered = []
+    if not discovered:
         discovered = gh.paginate(f"/users/{org}/repos", {"type": "all", "sort": "full_name"})
     if not include_private:
         discovered = [r for r in discovered if not r.get("private")]
