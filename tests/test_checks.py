@@ -67,3 +67,26 @@ def test_private_repo_skips_public_hygiene(meta):
     ctx = checks.RepoContext(gh=None, meta={**meta, "private": True}, tree=[])
     assert checks.security_policy(ctx) == []
     assert checks.has_ci(ctx) == []
+
+
+def test_dependabot_422_is_not_applicable(meta):
+    from ghposture.api import Unprocessable
+
+    class NoGraph:
+        def status(self, path):
+            raise Unprocessable("no graph")
+
+    ctx = checks.RepoContext(gh=NoGraph(), meta=meta)
+    assert checks.dependabot_alerts(ctx) == []
+    assert any("dependency graph" in reason for _, reason in ctx.skips)
+
+
+def test_write_permission_severity_depends_on_scope(meta, workflow_text):
+    from ghposture import workflows
+    doc = workflows.parse(workflow_text("write_all.yml"))
+    ctx = checks.RepoContext(gh=None, meta=meta,
+                             workflow_text={"w.yml": workflow_text("write_all.yml")},
+                             workflow_doc={"w.yml": doc})
+    findings = checks.write_permissions(ctx)
+    assert len(findings) == 1
+    assert findings[0].severity is Severity.HIGH

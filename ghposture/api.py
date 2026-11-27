@@ -32,6 +32,12 @@ class Forbidden(ApiError):
     """Authenticated but not permitted. Callers degrade to 'not checked'."""
 
 
+class Unprocessable(ApiError):
+    """The endpoint refused the request for this repository, e.g. no dependency
+    graph on a repository that holds no manifests. Not a pass, not a failure:
+    the caller decides and records it."""
+
+
 class RateLimited(ApiError):
     def __init__(self, reset_at: float | None):
         super().__init__("rate limited")
@@ -81,6 +87,8 @@ class GitHub:
                         raise Forbidden("insufficient permission") from None
                 if code == 404:
                     raise NotFound("not found") from None
+                if code == 422:
+                    raise Unprocessable("unprocessable") from None
                 if code >= 500 and attempt < self._retries:
                     self._sleep(self._backoff(attempt))
                     continue

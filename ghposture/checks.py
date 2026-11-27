@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from . import workflows
-from .api import Forbidden, GitHub, NotFound
+from .api import Forbidden, GitHub, NotFound, Unprocessable
 from .models import Finding, Severity
 
 Findings = list[Finding]
@@ -131,6 +131,9 @@ def dependabot_alerts(ctx: RepoContext) -> Findings:
         code = ctx.gh.status(f"/repos/{full}/vulnerability-alerts")
     except Forbidden:
         ctx.skip("dependency alerts need admin on the repository")
+        return []
+    except Unprocessable:
+        ctx.skip("no dependency graph: nothing to alert on")
         return []
     except NotFound:
         code = 404
@@ -273,15 +276,20 @@ def missing_permissions(ctx: RepoContext) -> Findings:
 
 
 def write_permissions(ctx: RepoContext) -> Findings:
+    """Workflow-level write is high: it applies to every job in the file.
+    Job-level write is medium: scoped, and sometimes the only way to publish."""
     out: Findings = []
     for path, doc in ctx.workflow_doc.items():
         for scope, value in workflows.workflow_permissions_matrix(doc):
-            if workflows.permission_is_write_all(value):
-                out.append(_finding(ctx, "W005", Severity.HIGH,
-                                    "Workflow requests write permissions",
-                                    f"{path}: {scope} permissions={value}",
-                                    "Grant the narrowest scope the job needs.",
-                                    location=path))
+            if not workflows.permission_is_write_all(value):
+                continue
+            top_level = scope == "<top level>"
+            out.append(_finding(ctx, "W005",
+                                Severity.HIGH if top_level else Severity.MEDIUM,
+                                "Workflow requests write permissions",
+                                f"{path}: {scope} permissions={value}",
+                                "Grant the narrowest scope the job needs.",
+                                location=path))
     return out
 
 

@@ -71,8 +71,11 @@ exploitable, always worth a review.
 Counts workflows with no top-level `permissions:` key. Without one the workflow
 inherits the repository default, which may be write.
 
-### W005 write_permissions — high
-`permissions: write-all`, or any scope set to `write`, at workflow or job level.
+### W005 write_permissions — high, medium at job level
+`permissions: write-all`, or any scope set to `write`. Workflow-level write is
+**high** because it applies to every job in the file; job-level write is
+**medium** because it is scoped and sometimes the only way to publish. The
+evidence string names the scope, so the difference is visible in the report.
 
 ### W006 remote_script — high
 A line that pipes `curl` or `wget` into `sh`, `bash`, `zsh` or `ksh`.

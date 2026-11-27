@@ -129,7 +129,7 @@ Stated plainly, because a scanner that hides its edges is worse than no scanner:
 
 ```bash
 pip install -r requirements-dev.txt
-pytest              # 28 tests, no network
+pytest              # ................................ tests, no network
 ruff check .
 ```
 

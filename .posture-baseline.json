@@ -5,6 +5,12 @@
       "check": "R005",
       "reason": "Deploy branch: force-push blocking applied, but a required PR would break the publish workflow. Revisit when publishing moves to Actions.",
       "expires": "2027-02-28"
+    },
+    {
+      "repo": "twinthos/twinthos-private-archive",
+      "check": "W005",
+      "reason": "Publishing job must push to gh-pages. Write is scoped to that job; the workflow token is read-only.",
+      "expires": "2027-02-28"
     }
   ]
 }
